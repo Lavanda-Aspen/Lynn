@@ -5,15 +5,19 @@
 ## Demo
 
 **The Ocean** — `Stereo_FFT`, `NUM_TYPES = 2`
+
 https://github.com/user-attachments/assets/c37befa8-85c6-476e-8fb8-c9df5d802fc5
 
 **Way Back** — `Stereo_Left_FFT`, `NUM_TYPES = 2`
+
 https://github.com/user-attachments/assets/b7d289e6-1de3-47f4-bfd3-f0a588850df4
 
 **Escape From Heaven** — `Stereo_Alternating_FFT`, `NUM_TYPES = 4`
+
 https://github.com/user-attachments/assets/ee7d2fcb-e1e9-4e7e-89f1-d8ec50129f51
 
 **Why Do I** — `Stereo_Split_FFT`, `NUM_TYPES = 4`
+
 https://github.com/user-attachments/assets/178ec9bf-4968-4558-b298-39f7b105293b
 
 ## The idea
