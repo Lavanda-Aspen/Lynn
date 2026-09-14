@@ -38,17 +38,26 @@ The audio side came later. I was watching a video on YouTube, saw the classic bo
 ## Build
 
 Requirements: CMake ≥ 3.15, a C++17 compiler (MSVC / MinGW-w64 / GCC / Clang), and Git (so CMake can fetch raylib and SDL2).
-
+ 
 ```bash
 git clone https://github.com/Lavanda-Aspen/Lynn.git
 cd Lynn
 cmake -B build
 cmake --build build
 ```
-
+ 
+On Windows, if you're using **MinGW-w64** (e.g. via MSYS2) rather than Visual Studio, specify the generator explicitly — otherwise CMake may default to a Visual Studio generator that doesn't match your compiler:
+ 
+```powershell
+cmake -B build -G "MinGW Makefiles"
+cmake --build build
+```
+ 
+If you have Visual Studio installed and want to use it instead, the plain `cmake -B build` command above is enough — CMake will pick the VS generator automatically.
+ 
 The executable ends up at `build/Lynn` (Linux/macOS) or `build/Lynn.exe` / `build/Release/Lynn.exe` (Windows), depending on the generator.
-
-The `cmake -B build` step (which fetches and configures raylib/SDL2) only needs to be run once. After that, for any rebuild — after pulling changes or editing the code — just run `cmake --build build` again.
+ 
+The initial `cmake -B build` step (which fetches and configures raylib/SDL2) only needs to be run once. After that, for any rebuild — after pulling changes or editing the code — just run `cmake --build build` again.
 
 ## Usage
 
