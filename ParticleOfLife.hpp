@@ -65,7 +65,7 @@ private:
             particles.y[i] = static_cast<float>(GetRandomValue(20, HEIGHT - 20));
             particles.vel_x[i] = 0.0f;
             particles.vel_y[i] = 0.0f;
-            particles.type[i] = GetRandomValue(0, NUM_TYPES - 1);
+            particles.type[i] = i % NUM_TYPES;
         }
     }
 

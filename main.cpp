@@ -19,11 +19,11 @@
 #define WIDTH 1400
 #define HEIGHT 900
 
-#define MAX_PARTICLES 700
-#define R_MAX 110.0f
-#define BETA 0.35f
-#define FORCE_SCALE 600.0f
-#define FRICTION 0.85f
+#define MAX_PARTICLES 600
+#define R_MAX 105.0f
+#define BETA 0.4f
+#define FORCE_SCALE 650.0f
+#define FRICTION 0.84f
 #define MIN_DIST 4.0f
 
 
@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
     std::vector<float> smoothAudio(TOTAL_BAR, 0.0f);
 
     while (pol.Active()) {
-    	Stereo_FFT(leftInput, leftFFT, rightInput, rightFFT, smoothAudio);
+    	Stereo_Split_FFT(leftInput, leftFFT, rightInput, rightFFT, smoothAudio);
         pol.Drift_Angle(smoothAudio);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
@@ -133,7 +133,7 @@ int main(int argc, char* argv[]) {
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-void inline Stereo_Left_FFT(std::vector<float>& leftInput, std::vector<float>& leftFFT, std::vector<float>& smoothAudio) {
+void inline Stereo_Left_FFT(std::vector<float>& leftInput, std::vector<float>& leftFFT, std::vector<float>& rightInput, std::vector<float>& rightFFT, std::vector<float>& smoothAudio) {
     std::vector<int16_t> tempBuffer(FFT_WINDOW * 2);
     size_t peeked = fftRingBuffer.pop(tempBuffer.data(), FFT_WINDOW * 2);
 
@@ -166,7 +166,7 @@ void inline Stereo_Left_FFT(std::vector<float>& leftInput, std::vector<float>& l
     }
 }
 
-void inline Stereo_Right_FFT(std::vector<float>& rightInput, std::vector<float>& rightFFT, std::vector<float>& smoothAudio) {
+void inline Stereo_Right_FFT(std::vector<float>& leftInput, std::vector<float>& leftFFT, std::vector<float>& rightInput, std::vector<float>& rightFFT, std::vector<float>& smoothAudio) {
     std::vector<int16_t> tempBuffer(FFT_WINDOW * 2);
     size_t peeked = fftRingBuffer.pop(tempBuffer.data(), FFT_WINDOW * 2);
 
@@ -252,9 +252,11 @@ void inline Stereo_Split_FFT(std::vector<float>& leftInput, std::vector<float>& 
     FFT::compute(rightInput, rightFFT);
 
     if (!leftFFT.empty() && !rightFFT.empty()) {
+        static float timeElapsed = 0.0f;
         int halfBar = TOTAL_BAR / 2;
-        int binSpan = std::max(1, static_cast<int>(leftFFT.size()) / TOTAL_BAR);
+        int binSpan = std::max(1, static_cast<int>(leftFFT.size()) / halfBar);
         for (int b = 0; b < halfBar; ++b) {
+            timeElapsed += 0.005f;
             float sumleft = 0.0f;
             float sumright = 0.0f;
             int count = 0;
@@ -267,11 +269,17 @@ void inline Stereo_Split_FFT(std::vector<float>& leftInput, std::vector<float>& 
             }
             float avgVal_left = (count > 0) ? (sumleft / count) : 0.0f;
             float avgVal_right = (count > 0) ? (sumright / count) : 0.0f;
+
+            float waveMod = std::sin(timeElapsed + b * 0.5f) * 0.02f;
             
-            float target_left = std::log10(avgVal_left + 1.0f) * 0.09f ;
-            float target_right = std::log10(avgVal_right + 1.0f) * 0.09f ;
-            smoothAudio[b] += (target_left - smoothAudio[b]) * 0.275f;
-            smoothAudio[b + halfBar] += (target_right - smoothAudio[b + halfBar]) * 0.275f;
+            float target_left = std::log10(avgVal_left + 1.0f) * 0.11f + waveMod;
+            float target_right = std::log10(avgVal_right + 1.0f) * 0.11f - waveMod;
+            
+            float smoothingFactorL = (target_left > smoothAudio[b]) ? 0.35f : 0.15f;
+            float smoothingFactorR = (target_right > smoothAudio[b + halfBar]) ? 0.35f : 0.15f;
+
+            smoothAudio[b] += (target_left - smoothAudio[b]) * smoothingFactorL;
+            smoothAudio[b + halfBar] += (target_right - smoothAudio[b + halfBar]) * smoothingFactorR;
         }
     }
 }
@@ -293,9 +301,11 @@ void inline Stereo_Alternating_FFT(std::vector<float>& leftInput, std::vector<fl
     FFT::compute(rightInput, rightFFT);
 
     if (!leftFFT.empty() && !rightFFT.empty()) {
+        static float timeElapsed = 0.0f;
         int halfBar = TOTAL_BAR / 2;
-        int binSpan = std::max(1, static_cast<int>(leftFFT.size()) / TOTAL_BAR);
+        int binSpan = std::max(1, static_cast<int>(leftFFT.size()) / halfBar);
         for (int b = 0; b < halfBar; ++b) {
+            timeElapsed += 0.05f;
             float sumleft = 0.0f;
             float sumright = 0.0f;
             int count = 0;
@@ -308,11 +318,17 @@ void inline Stereo_Alternating_FFT(std::vector<float>& leftInput, std::vector<fl
             }
             float avgVal_left = (count > 0) ? (sumleft / count) : 0.0f;
             float avgVal_right = (count > 0) ? (sumright / count) : 0.0f;
+
+            float waveMod = std::sin(timeElapsed + b * 0.5f) * 0.02f;
             
-            float target_left = std::log10(avgVal_left + 1.0f) * 0.1f ;
-            float target_right = std::log10(avgVal_right + 1.0f) * 0.1f ;
-            smoothAudio[2 * b] += (target_left - smoothAudio[2 * b]) * 0.25f;
-            smoothAudio[2 * b + 1] += (target_right - smoothAudio[2 * b + 1]) * 0.25f;
+            float target_left = std::log10(avgVal_left + 1.0f) * 0.11f + waveMod;
+            float target_right = std::log10(avgVal_right + 1.0f) * 0.11f - waveMod;
+            
+            float smoothingFactorL = (target_left > smoothAudio[b]) ? 0.35f : 0.15f;
+            float smoothingFactorR = (target_right > smoothAudio[b + halfBar]) ? 0.35f : 0.15f;
+
+            smoothAudio[2 * b] += (target_left - smoothAudio[2 * b]) * smoothingFactorL;
+            smoothAudio[2 * b + 1] += (target_right - smoothAudio[2 * b + 1]) * smoothingFactorR;
         }
     }
 }
